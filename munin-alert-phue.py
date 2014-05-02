@@ -5,7 +5,7 @@
 munin-alert-phue.py provides extreme feedback functionality of munin alerts to a Philips Hue system.
 """
 
-import logging, os, argparse, ConfigParser, json, time
+import logging, os, sys, argparse, ConfigParser, json, time, pickle
 from phue import Bridge
 
 
@@ -52,7 +52,7 @@ def load_state(filename):
     try:
         if os.access(filename, os.R_OK):
             stateFile = open(filename, 'r')
-            return json.load(stateFile)
+            return pickle.load(stateFile)
     except:
         pass
     return {'current_status': LEVEL_NORMAL, 'last_change': time.time()}
@@ -64,15 +64,51 @@ def save_state(filename, state):
     """
     log.info('Saving state to %s', filename)
     stateFile = open(filename, 'w')
-    json.dump(state, stateFile)
+    pickle.dump(state, stateFile)
 
 
-def update_lights(bridge_host, bridge_user):
+def read_munin_alert(fp):
+    """
+    Read a munin alert from a file pointer
+    """
+    return json.load(fp)
+
+
+def update_state(current_state, update):
+    """
+    Update the current state
+    """
+    key = update.get('group', ''), update.get('host', ''), update.get('graph', '')
+    if ('entries' not in current_state):
+        current_state['entries'] = dict()
+    current_state['entries'][key] = { 'warnings': update.get('warnings', []), 'criticals': update.get('criticals', []) }
+    current_state['current_status'] = get_max_status(current_state)
+
+def get_max_status(current_state):
+    """
+    Get the highest state
+    """
+    maxState = LEVEL_NORMAL
+    for entry in current_state['entries'].values():
+        if len(entry['criticals']) > 0:
+            return LEVEL_CRITICAL                    
+        elif len(entry['warnings']) > 0 and maxState < LEVEL_WARNING:
+            maxState = LEVEL_WARNING
+    return maxState
+
+
+def update_lights(bridge_host, bridge_user, level):
     """
     Update the lights with the new state
     """
     bridge = Bridge(ip=bridge_host, username=bridge_user)
-    # TODO
+    if level == LEVEL_CRITICAL:
+        bridge.set_light([1,2], {'transitiontime': 0, 'on':True, 'hue':0, 'alert':'lselect'})
+    elif level == LEVEL_WARNING:
+        bridge.set_light([1,2], {'transitiontime': 0, 'on':True, 'hue':53000, 'alert':'select'})
+    elif level == LEVEL_NORMAL:
+        bridge.set_light([1,2], {'transitiontime': 50, 'on':True, 'hue':25500})
+        bridge.set_light([1,2], {'transitiontime': 3000, 'on':False})
 
 
 def register(bridge_host):
@@ -117,7 +153,16 @@ if __name__ == "__main__":
     state = load_state(stateFilename)
     old_status = state['current_status']
 
-    # Process status update
+    munin_alert = read_munin_alert(sys.stdin)
+    update_state(state, munin_alert)
+
+    updatePulse = 5 * 60
+
+    if (state['current_status'] != old_status
+        or (state['current_status'] == LEVEL_CRITICAL and state['last_change'] < time.time() - updatePulse)
+        ):
+        update_lights(bridge_host, bridge_user, state['current_status'])
+        state['last_change'] = time.time()
 
     save_state(stateFilename,state)
 
