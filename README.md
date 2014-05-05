@@ -22,25 +22,27 @@ Actions are a list of commands send to the lights. An aciton name starts with a 
 
 Below is the standard configuration. Each action can be overwritten when defined in your configuration file.
 
-	[@normal]
-	1={'transitiontime': 50, 'on':True, 'bri': 128, 'hue':25500}
-	2={'transitiontime': 3000, 'on':False}
-	
-	[@normal-bright]
-	1={'transitiontime': 50, 'on':True, 'bri': 255, 'hue':25500}
-	2={'transitiontime': 3000, 'on':False}
-	
-	[@warning]
-	1={'transitiontime': 0, 'on':True, 'hue':53000, 'bri': 128, 'alert':'select'}
-	
-	[@warning-bright]
-	1={'transitiontime': 0, 'on':True, 'hue':53000, 'bri': 255, 'alert':'select'}
-	
-	[@critical]
-	1={'transitiontime': 0, 'on':True, 'hue':0, 'bri': 128, 'alert':'lselect'}
-	
-	[@critical-bright]
-	1={'transitiontime': 0, 'on':True, 'hue':0, 'bri': 255, 'alert':'lselect'}
+```
+[@normal]
+1={'transitiontime': 50, 'on':True, 'bri': 128, 'hue':25500}
+2={'transitiontime': 3000, 'on':False}
+
+[@normal-bright]
+1={'transitiontime': 50, 'on':True, 'bri': 255, 'hue':25500}
+2={'transitiontime': 3000, 'on':False}
+
+[@warning]
+1={'transitiontime': 0, 'on':True, 'hue':53000, 'bri': 128, 'alert':'select'}
+
+[@warning-bright]
+1={'transitiontime': 0, 'on':True, 'hue':53000, 'bri': 255, 'alert':'select'}
+
+[@critical]
+1={'transitiontime': 0, 'on':True, 'hue':0, 'bri': 128, 'alert':'lselect'}
+
+[@critical-bright]
+1={'transitiontime': 0, 'on':True, 'hue':0, 'bri': 255, 'alert':'lselect'}
+```
 
 The JSON line accepts all values as defined in the [Philips hue Lights API](http://developers.meethue.com/1_lightsapi.html#16_set_light_state). 
 
@@ -54,36 +56,44 @@ You can define multiple sections in a single configuration file. This will allow
 
 There is a special section with the name `*` which can be used to define the defaults which can then be overwritten in a specific section. Below is the built in standard configuration.
 
-	[*]
-	state_file=~/.munin-alert-phue.%(section)s.db
-	light.normal=@normal
-	light.warning=@warning
-	light.critical=@critical
+```INI
+[*]
+state_file=~/.munin-alert-phue.%(section)s.db
+critical_interval=5
+light.normal=@normal
+light.warning=@warning
+light.critical=@critical
+```
 	
 Below is an example configuration
 
-	[default]
-	hostname=bridge.hostname
-	username=bridge.username
-	lights=1,2
-	light.1.normal=@normal-bright
-	light.1.warning=@warning-bright
-	light.1.critical=@critical-bright
+```INI
+[default]
+hostname=bridge.hostname
+username=bridge.username
+lights=1,2
+light.1.normal=@normal-bright
+light.1.warning=@warning-bright
+light.1.critical=@critical-bright
+```
 
 | Variable | Description |
 |----------|-------------|
 | `hostname` | The hostname, or IP, to the light bridge. |
 | `username` | The username to use to connect to the bridge. |
+| `critical_interval` | Number of minutes to wait before executing the commands for the critical state again. Set to 0 to disable. |
 | `lights` | A comma separated list of lights to update. This can be the light number, or the name. |
 | `light.normal` | The actions to perform when everything returned to normal. |
 | `light.warning` | The actions to perform when a warning level is reached. |
 | `light.critical` | The actions to perform in a critical state. |
-| `state_file` | The filename where to store the state. Each section should point to a different file otherwise they will conflict. |
+| `state_file` | The filename where to store the state. Each section should point to a different file otherwise they will conflict. `%(section)s` will be substituted with the section name. |
 
 You can configure different actions to be executed for each light by using the id, or name, of the light like this: `light.1.normal` or `light.coffee-machine.normal`.
 
 
 ### Munin alert config
+
+In order for this all to work you need to configure a munin alert command with a special input to be fed to `munin-alert-phue.pu`.
 
 	contact.phue.command munin-alert-phue.py -c config.ini
 	contact.phue.text { \
@@ -93,6 +103,8 @@ You can configure different actions to be executed for each light by using the i
 		"warnings": [${loop<,>:wfields "${var:label}"}], \
 		"criticals": [${loop<,>:cfields "${var:label}"}], \
 		}
+
+You probably also want to set `contact.phue.always_send critical` so that the light actions will be executed at the set `critical_interval`.
 
 
 Dependencies
