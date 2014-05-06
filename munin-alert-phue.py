@@ -4,7 +4,7 @@
 """
 munin-alert-phue.py provides extreme feedback functionality of munin alerts to a Philips Hue system.
 """
-
+from __future__ import print_function
 import logging, os, sys, argparse, ConfigParser, json, time, pickle
 from phue import Bridge
 
@@ -12,6 +12,56 @@ from phue import Bridge
 LEVEL_NORMAL=0
 LEVEL_WARNING=1
 LEVEL_CRITICAL=2
+
+class Config:
+    sysdef = {
+        'state_file': '~/.munin-alert-phue.%(section)s.db',
+        'critical_interval': '5',
+        'light.normal': '@normal',
+        'light.warning': '@warning',
+        'light.critical': '@critical'
+        }
+
+    actions = {
+        '@normal': [
+            {'transitiontime': 50, 'on':True, 'bri': 128, 'hue':25500},
+            {'transitiontime': 3000, 'on':False}
+            ],
+        '@normal-bright': [
+            {'transitiontime': 50, 'on':True, 'bri': 255, 'hue':25500},
+            {'transitiontime': 3000, 'on':False}
+            ],
+        '@warning': [
+            {'transitiontime': 0, 'on':True, 'hue':53000, 'bri': 128, 'alert':'select'}
+            ],
+        '@warning-bright': [
+            {'transitiontime': 0, 'on':True, 'hue':53000, 'bri': 255, 'alert':'select'}
+            ],
+        '@critical': [
+            {'transitiontime': 0, 'on':True, 'hue':0, 'bri': 128, 'alert':'lselect'}
+            ],
+        '@critical-bright': [
+            {'transitiontime': 0, 'on':True, 'hue':0, 'bri': 255, 'alert':'lselect'}
+            ]
+        }
+
+    def __init__(self, config, section):
+        self.config = config
+        self.section = section
+        self.vars = {'section', section }
+        self.loadConfig()
+
+    def loadConfig(self):
+        self.hostname = self.get('hostname')
+        self.username = self.get('username')
+        self.state_file = self.get('state_file')
+
+    def getOption(self, option):
+        if (self.config.has_option(self.section, option)):
+            return self.config.get(self.section, option, 0, self.vars)
+        elif (self.config.has_option('*', option)):
+            return self.config.get('*', option, 0, self.vars)
+        return None
 
 
 def parse_args():
@@ -82,7 +132,16 @@ def update_state(current_state, update):
     if ('entries' not in current_state):
         current_state['entries'] = dict()
     current_state['entries'][key] = { 'warnings': update.get('warnings', []), 'criticals': update.get('criticals', []) }
+    cleanup_state(current_state)
     current_state['current_status'] = get_max_status(current_state)
+
+def cleanup_state(state):
+    """
+    Removes entries which have no warning or critical state
+    """
+    for (key, entry) in state['entries'].items():
+        if len(entry['criticals']) == 0 and len(entry['warnings']) == 0:
+            del state['entries'][key]
 
 def get_max_status(current_state):
     """
@@ -115,8 +174,29 @@ def register(bridge_host):
     """
     Register for a user at the provided host
     """
-    # TODO
+    class BridgeEx(Bridge):
+        """
+        Subclass of Bridge to perform a different way of registration
+        """
+        def register_app(self):
+            registration_request = {"devicetype": "munin-alert-phue"}
+            data = json.dumps(registration_request)
+            response = self.request('POST', '/api', data)
+            for line in response:
+                for key in line:
+                    if 'success' in key:
+                        print("# User registration succesful")
+                        print("[*]")
+                        print("hostname="+self.ip)
+                        print("username="+line['success']['username'])
+                    if 'error' in key:
+                        error_type = line['error']['type']
+                        if error_type == 101:
+                            print('ERROR: The link button has not been pressed in the last 30 seconds.', file=sys.stderr)
+                        if error_type == 7:
+                            print('ERROR: Unknown username.', file=sys.stderr)
 
+    bridge = BridgeEx(ip=bridge_host)
 
 
 if __name__ == "__main__":
