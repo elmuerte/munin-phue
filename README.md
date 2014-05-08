@@ -71,10 +71,10 @@ Below is an example configuration
 [default]
 hostname=bridge.hostname
 username=bridge.username
-lights=1,2
-light.1.normal=@normal-bright
-light.1.warning=@warning-bright
-light.1.critical=@critical-bright
+lights=one,two
+light.one.normal=@normal-bright
+light.one.warning=@warning-bright
+light.one.critical=@critical-bright
 ```
 
 | Variable | Description |
@@ -82,7 +82,7 @@ light.1.critical=@critical-bright
 | `hostname` | The hostname, or IP, to the light bridge. |
 | `username` | The username to use to connect to the bridge. |
 | `critical_interval` | Number of minutes to wait before executing the commands for the critical state again. Set to 0 to disable. |
-| `lights` | A comma separated list of lights to update. This can be the light number, or the name. |
+| `lights` | A comma separated list of lights to update. This is the name of the light. |
 | `light.normal` | The actions to perform when everything returned to normal. |
 | `light.warning` | The actions to perform when a warning level is reached. |
 | `light.critical` | The actions to perform in a critical state. |

@@ -48,20 +48,52 @@ class Config:
     def __init__(self, config, section):
         self.config = config
         self.section = section
-        self.vars = {'section', section }
-        self.loadConfig()
+        self.vars = {'section': section }
+        self.load_config()
 
-    def loadConfig(self):
+    def load_config(self):
         self.hostname = self.get('hostname')
         self.username = self.get('username')
-        self.state_file = self.get('state_file')
+        self.state_file = os.path.expanduser(self.get('state_file'))
+        lights = self.get('lights')
+        if (lights is None):
+            self.lights = []
+        else:
+            self.lights = lights.split(',')
+        # TODO: iterate over sections and unset self.actions
 
-    def getOption(self, option):
+    def get(self, option):
         if (self.config.has_option(self.section, option)):
             return self.config.get(self.section, option, 0, self.vars)
         elif (self.config.has_option('*', option)):
             return self.config.get('*', option, 0, self.vars)
+        # TODO: get system default
         return None
+
+    def level_str(self, level):
+        if (level == LEVEL_NORMAL):
+            return 'normal'
+        if (level == LEVEL_WARNING):
+            return 'warning'
+        if (level == LEVEL_CRITICAL):
+            return 'critical'
+
+    def load_actions(self, actionId):
+        # TODO: implement
+        pass
+
+    def get_actions(self, light, level):
+        levelStr = self.level_str(level)
+        actId = self.get('light.'+light+'.'+levelStr)
+        if (actId == None):
+            actId = self.get('light.'+levelStr)
+        log.debug('Actions for light %s = %s', light, actId)
+        if (not self.actions.has_key(actId)):
+            self.load_actions(actId)
+        if (not self.actions.has_key(actId)):
+            log.error('Unknown action id for light "%s" and level "%s": %s', light, level, actId)
+            return []
+        return self.actions[actId]
 
 
 def parse_args():
@@ -76,7 +108,7 @@ def parse_args():
     cmdline.add_argument('--register',
                          metavar='HOSTNAME', help="Request a username from the Bridge at HOSTNAME. "
                          "Perform registration within 30 seconds after pressing the connect button on the bridge. "
-                         "The created username is written to the configuration file.")
+                         "The created username is written to the standard output in the configuration file format.")
     return cmdline.parse_args()
 
 
@@ -156,18 +188,16 @@ def get_max_status(current_state):
     return maxState
 
 
-def update_lights(bridge_host, bridge_user, level):
+def update_lights(config, level):
     """
     Update the lights with the new state
     """
-    bridge = Bridge(ip=bridge_host, username=bridge_user)
-    if level == LEVEL_CRITICAL:
-        bridge.set_light([1,2], {'transitiontime': 0, 'on':True, 'hue':0, 'alert':'lselect'})
-    elif level == LEVEL_WARNING:
-        bridge.set_light([1,2], {'transitiontime': 0, 'on':True, 'hue':53000, 'alert':'select'})
-    elif level == LEVEL_NORMAL:
-        bridge.set_light([1,2], {'transitiontime': 50, 'on':True, 'hue':25500})
-        bridge.set_light([1,2], {'transitiontime': 3000, 'on':False})
+    bridge = Bridge(ip=config.hostname, username=config.username)
+    for light in config.lights:
+        log.debug('Updating light "%s"', light)
+        actions = config.get_actions(light, level)
+        for act in actions:
+            bridge.set_light(light, act)
 
 
 def register(bridge_host):
@@ -209,42 +239,31 @@ if __name__ == "__main__":
         register(args.register)
         sys.exit()
 
-    config = load_config(args.config)
+    config = Config(load_config(args.config), args.section)
 
-
-    bridge_host = config.get(args.section, 'hostname')
-    bridge_user = config.get(args.section, 'username')
-
-    if (bridge_host == None):
-        log.fatal('hostname not defined in config section [%s].', args.section)
+    if (config.hostname == None):
+        log.fatal('hostname not defined in config section [%s].', config.section)
         sys.exit(1)
 
-    if (bridge_user == None):
-        log.fatal('username not defined in config section [%s]. Start with --register argument to generate a username', args.section)
+    if (config.username == None):
+        log.fatal('username not defined in config section [%s]. Start with --register argument to generate a username', config.section)
         sys.exit(1)
 
-
-    if (config.get(args.section, 'state_file') == None):
-        stateFilename = '~/.munin-alert-phue.'+key+'.db'
-    else:
-        stateFilename = config.get(args.section, 'state_file')
-
-    stateFilename = os.path.expanduser(stateFilename)
-    state = load_state(stateFilename)
+    state = load_state(config.state_file)
     old_status = state['current_status']
 
     munin_alert = read_munin_alert(sys.stdin)
     update_state(state, munin_alert)
 
-    updatePulse = 5 * 60
+    updatePulse = int(config.get('critical_interval')) * 60
 
     if (state['current_status'] != old_status
         or (state['current_status'] == LEVEL_CRITICAL and state['last_change'] < time.time() - updatePulse)
         ):
-        update_lights(bridge_host, bridge_user, state['current_status'])
+        update_lights(config, state['current_status'])
         state['last_change'] = time.time()
 
-    save_state(stateFilename,state)
+    save_state(config.state_file, state)
 
 
 
