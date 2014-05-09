@@ -103,6 +103,7 @@ In order for this all to work you need to configure a munin alert command with a
 		"warnings": [${loop<,>:wfields "${var:label}"}], \
 		"criticals": [${loop<,>:cfields "${var:label}"}] \
 		}
+	contact.phue.max_messages 1
 
 You probably also want to set `contact.phue.always_send critical` so that the light actions will be executed at the set `critical_interval`.
 
