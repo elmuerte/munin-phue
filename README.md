@@ -101,7 +101,7 @@ In order for this all to work you need to configure a munin alert command with a
 		"host": "${var:host}", \
 		"graph": "${var:graph_title}",\
 		"warnings": [${loop<,>:wfields "${var:label}"}], \
-		"criticals": [${loop<,>:cfields "${var:label}"}], \
+		"criticals": [${loop<,>:cfields "${var:label}"}] \
 		}
 
 You probably also want to set `contact.phue.always_send critical` so that the light actions will be executed at the set `critical_interval`.
