@@ -14,9 +14,15 @@ Create the file ```config.php``` with the following contents
 
 ```PHP
 $config['bin'] = '/path/to/munin-alert-phue.py';
-$config['my_secret_key']['config-file'] = '/path/to/my/config';
-$config['my_secret_key']['config-section'] = 'default';
+
+$config['MY_SECRET_KEY']['config-file'] = '/path/to/my/config';
+$config['MY_SECRET_KEY']['config-section'] = 'default';
+
+//$config['MY_OTHER_KEY']['config-file'] = '/path/to/my/config';
+//$config['MY_OTHER_KEY']['config-section'] = 'others';
 ```
+
+Replace ```MY_SECRET_KEY``` with a random string you want to use in the request. This would be the "security" to prevent others from posting updates.
 
 Munin alert configuration
 =========================
@@ -24,10 +30,10 @@ Munin alert configuration
 Instead of calling the munin-alert-phue.py script, change the like to execute cURL:
 
 ```
-contact.phue.command curl -X PUT http://example.org/munin-alert-phue/MY_KEY
+contact.phue.command curl -X PUT http://example.org/munin-alert-phue/MY_SECRET_KEY
 ```
 
-Where MY_KEY should be the key you configured in the gateway configuration.
+Where ```MY_SECRET_KEY``` should be the key you configured in the gateway configuration.
 
 
 
