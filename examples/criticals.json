@@ -1,0 +1,7 @@
+{
+	"group": "host group",
+	"host":	"test host",
+	"graph": "test graph",
+	"warnings": [],
+	"criticals": ["foo", "bar"]
+}
