@@ -30,7 +30,7 @@ Munin alert configuration
 Instead of calling the munin-alert-phue.py script, change the like to execute cURL:
 
 ```
-contact.phue.command curl -X PUT http://example.org/munin-alert-phue/MY_SECRET_KEY
+contact.phue.command curl -X PUT http://example.org/munin-alert-phue/MY_SECRET_KEY -d@-
 ```
 
 Where ```MY_SECRET_KEY``` should be the key you configured in the gateway configuration.
