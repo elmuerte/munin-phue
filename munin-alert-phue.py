@@ -155,7 +155,7 @@ class JSONReader():
                     self.braceCount += 1
                 elif (c == '}'):
                     if (self.braceCount == 0):
-                        raise Error("Unexpect '}'")
+                        raise Exception("Unexpected '}'", self.lineIdx, self.line)
                     self.braceCount -= 1
                     if (self.braceCount == 0):
                         self.json = self.json+self.line[0:self.lineIdx+1]
@@ -170,7 +170,7 @@ class JSONReader():
                     self.json += self.line
                     self.read_line()
 
-        raise Error("Invalid content")
+        raise Exception("Invalid content")
 
 
 def parse_args():
