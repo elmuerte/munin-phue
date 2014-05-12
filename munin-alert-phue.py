@@ -113,6 +113,65 @@ class Config:
             return []
         return self.actions[actId]
 
+class JSONReader():
+    """
+    A JSON iterator reading multiple JSON objects from a file object
+    """
+    braceCount = 0
+    line = None
+    lineIdx = 0
+    inStr = False
+    json = ""
+
+    def __init__(self, fp):
+        self.fp = fp
+
+    def __iter__(self):
+        return self
+
+    def read_line(self):
+        self.line = self.fp.next()
+        self.lineIdx = 0;
+        if (len(self.line) == 0):
+            raise StopIteration
+
+    def next(self):
+        if (self.fp.closed):
+            raise StopIteration
+        self.json = "";
+        if (self.line is None):
+            self.read_line()
+
+        while (self.line is not None):
+            while (self.lineIdx < len(self.line)):                
+                c = self.line[self.lineIdx]
+                if (self.inStr):
+                    if (c == '\\'):
+                        self.lineIdx += 1
+                    elif (c == '"'):
+                        self.inStr = False
+
+                elif (c == '{'):
+                    self.braceCount += 1
+                elif (c == '}'):
+                    if (self.braceCount == 0):
+                        raise Error("Unexpect '}'")
+                    self.braceCount -= 1
+                    if (self.braceCount == 0):
+                        self.json = self.json+self.line[0:self.lineIdx+1]
+                        self.line = self.line[self.lineIdx+1:]
+                        log.debug("Received update: %s", self.json)
+                        return json.loads(self.json)
+                elif (c == '"'):
+                    self.inStr = True
+
+                self.lineIdx += 1
+                if (self.lineIdx >= len(self.line)):
+                    self.json += self.line
+                    self.read_line()
+
+        raise Error("Invalid content")
+
 
 def parse_args():
     """
@@ -127,6 +186,8 @@ def parse_args():
                          metavar='HOSTNAME', help="Request a username from the Bridge at HOSTNAME. "
                          "Perform registration within 30 seconds after pressing the connect button on the bridge. "
                          "The created username is written to the standard output in the configuration file format.")
+    cmdline.add_argument('--reset',
+                         help="Reset the light status to normal.")
     return cmdline.parse_args()
 
 
@@ -166,22 +227,17 @@ def save_state(filename, state):
     stateFile = open(filename, 'w')
     pickle.dump(state, stateFile)
 
-
-def read_munin_alert(fp):
-    """
-    Read a munin alert from a file pointer
-    """
-    return json.load(fp)
-
-
-def update_state(current_state, update):
+def update_state(current_state, updates):
     """
     Update the current state
     """
-    key = update.get('group', ''), update.get('host', ''), update.get('graph', '')
-    if ('entries' not in current_state):
-        current_state['entries'] = dict()
-    current_state['entries'][key] = { 'warnings': update.get('warnings', []), 'criticals': update.get('criticals', []) }
+
+    for update in updates:
+        key = update.get('group', ''), update.get('host', ''), update.get('graph', '')
+        if ('entries' not in current_state):
+            current_state['entries'] = dict()
+            current_state['entries'][key] = { 'warnings': update.get('warnings', []), 'criticals': update.get('criticals', []) }
+
     cleanup_state(current_state)
     current_state['current_status'] = get_max_status(current_state)
 
@@ -248,8 +304,11 @@ def register(bridge_host):
 
 
 if __name__ == "__main__":
+
+
     logging.basicConfig(format='%(asctime)s %(levelname)s [%(name)s]: %(message)s', level=logging.DEBUG)
     log = logging.getLogger('munin.alert.phue')
+
 
     args = parse_args()
 
@@ -270,8 +329,7 @@ if __name__ == "__main__":
     state = load_state(config.state_file)
     old_status = state['current_status']
 
-    munin_alert = read_munin_alert(sys.stdin)
-    update_state(state, munin_alert)
+    update_state(state, JSONReader(sys.stdin))
 
     updatePulse = int(config.get('critical_interval')) * 60
 

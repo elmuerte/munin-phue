@@ -1,0 +1,16 @@
+{
+	"group": "host group",
+	"host":	"test host",
+	"graph": "test graph",
+	"ok": [],
+	"warnings": [],
+	"criticals": []
+}
+{
+	"group": "host group",
+	"host":	"test host",
+	"graph": "test graph",
+	"ok": [],
+	"warnings": [],
+	"criticals": []
+}
