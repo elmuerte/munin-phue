@@ -160,6 +160,7 @@ class JSONReader():
                     if (self.braceCount == 0):
                         self.json = self.json+self.line[0:self.lineIdx+1]
                         self.line = self.line[self.lineIdx+1:]
+			self.lineIdx = 0
                         log.debug("Received update: %s", self.json)
                         return json.loads(self.json)
                 elif (c == '"'):
