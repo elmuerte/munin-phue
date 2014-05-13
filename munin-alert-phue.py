@@ -118,7 +118,7 @@ class JSONReader():
     A JSON iterator reading multiple JSON objects from a file object
     """
     braceCount = 0
-    line = None
+    line = ""
     lineIdx = 0
     inStr = False
     json = ""
@@ -139,37 +139,37 @@ class JSONReader():
         if (self.fp.closed):
             raise StopIteration
         self.json = "";
-        if (self.line is None):
+
+        if (len(self.line) == 0):
             self.read_line()
 
-        while (self.line is not None):
-            while (self.lineIdx < len(self.line)):                
-                c = self.line[self.lineIdx]
-                if (self.inStr):
-                    if (c == '\\'):
-                        self.lineIdx += 1
-                    elif (c == '"'):
-                        self.inStr = False
-
-                elif (c == '{'):
-                    self.braceCount += 1
-                elif (c == '}'):
-                    if (self.braceCount == 0):
-                        raise Exception("Unexpected '}'", self.lineIdx, self.line)
-                    self.braceCount -= 1
-                    if (self.braceCount == 0):
-                        self.json = self.json+self.line[0:self.lineIdx+1]
-                        self.line = self.line[self.lineIdx+1:]
-			self.lineIdx = 0
-                        log.debug("Received update: %s", self.json)
-                        return json.loads(self.json)
+        while (self.lineIdx < len(self.line)):                
+            c = self.line[self.lineIdx]
+            if (self.inStr):
+                if (c == '\\'):
+                    self.lineIdx += 1
                 elif (c == '"'):
-                    self.inStr = True
+                    self.inStr = False
 
-                self.lineIdx += 1
-                if (self.lineIdx >= len(self.line)):
-                    self.json += self.line
-                    self.read_line()
+            elif (c == '{'):
+                self.braceCount += 1
+            elif (c == '}'):
+                if (self.braceCount == 0):
+                    raise Exception("Unexpected '}'", self.lineIdx, self.line)
+                self.braceCount -= 1
+                if (self.braceCount == 0):
+                    self.json = self.json+self.line[0:self.lineIdx+1]
+                    self.line = self.line[self.lineIdx+1:]
+                    self.lineIdx = 0
+                    log.debug("Received update: %s", self.json)
+                    return json.loads(self.json)
+            elif (c == '"'):
+                self.inStr = True
+
+            self.lineIdx += 1
+            if (self.lineIdx >= len(self.line)):
+                self.json += self.line
+                self.read_line()
 
         raise Exception("Invalid content")
 

@@ -25,7 +25,7 @@
 //Reject any non-put request
 if ($_SERVER['REQUEST_METHOD'] != 'PUT') {
 	header('HTTP/1.0 400 Bad Request');
-	die;
+	die('Bad Request');
 }
 
 $config = array();
@@ -93,7 +93,6 @@ else {
 	stream_get_contents($pipes[1]);
 	stream_get_contents($pipes[2]);
 }
-fclose($pipes[0]);
 fclose($pipes[1]);
 fclose($pipes[2]);
 
@@ -112,5 +111,5 @@ if ($debug) {
 	echo "\nSTDOUT:\n";
 	echo $stdout;
 	echo "\n\nSTDERR:\n";
-	echo $sterr;
+	echo $stderr;
 }
