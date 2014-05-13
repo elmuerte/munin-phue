@@ -88,8 +88,6 @@ light.one.critical=@critical-bright
 | `light.critical` | The actions to perform in a critical state. |
 | `state_file` | The filename where to store the state. Each section should point to a different file otherwise they will conflict. `%(section)s` will be substituted with the section name. |
 
-You can configure different actions to be executed for each light by using the id, or name, of the light like this: `light.1.normal` or `light.coffee-machine.normal`.
-
 
 ### Munin alert config
 
