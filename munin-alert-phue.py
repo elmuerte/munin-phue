@@ -236,7 +236,7 @@ def update_state(current_state, updates):
         key = update.get('group', ''), update.get('host', ''), update.get('graph', '')
         if ('entries' not in current_state):
             current_state['entries'] = dict()
-            current_state['entries'][key] = { 'warnings': update.get('warnings', []), 'criticals': update.get('criticals', []) }
+        current_state['entries'][key] = { 'warnings': update.get('warnings', []), 'criticals': update.get('criticals', []) }
 
     cleanup_state(current_state)
     current_state['current_status'] = get_max_status(current_state)
@@ -304,11 +304,8 @@ def register(bridge_host):
 
 
 if __name__ == "__main__":
-
-
     logging.basicConfig(format='%(asctime)s %(levelname)s [%(name)s]: %(message)s', level=logging.DEBUG)
     log = logging.getLogger('munin.alert.phue')
-
 
     args = parse_args()
 
@@ -336,9 +333,11 @@ if __name__ == "__main__":
     if (state['current_status'] != old_status
         or (state['current_status'] == LEVEL_CRITICAL and state['last_change'] < time.time() - updatePulse)
         ):
+        log.info('Status changed from %d to %d', old_status, state['current_status'])
         update_lights(config, state['current_status'])
         state['last_change'] = time.time()
 
+    log.debug("New state: %s", state)
     save_state(config.state_file, state)
 
 
