@@ -2,7 +2,7 @@ PHP Gateway
 -----------
 
 This is a simply gateway written in PHP to forward a munin alert from a different host
-to the munin-alert-phue.py script running on this machine. 
+to the ```munin-alert-phue.py``` script running on this machine. 
 
 It provides an easy way to let alerts from a different network trigger lights unreachable 
 from that network.
