@@ -59,7 +59,7 @@ There is a special section with the name `*` which can be used to define the def
 ```INI
 [*]
 state_file=~/.munin-alert-phue.%(section)s.db
-critical_interval=5
+critical_interval=270
 light.normal=@normal
 light.warning=@warning
 light.critical=@critical
@@ -81,7 +81,7 @@ light.one.critical=@critical-bright
 |----------|-------------|
 | `hostname` | The hostname, or IP, to the light bridge. |
 | `username` | The username to use to connect to the bridge. |
-| `critical_interval` | Number of minutes to wait before executing the commands for the critical state again. Set to 0 to disable. |
+| `critical_interval` | Number of seconds to wait before executing the commands for the critical state again. Set to 0 to disable. |
 | `lights` | A comma separated list of lights to update. This is the name of the light. |
 | `light.normal` | The actions to perform when everything returned to normal. |
 | `light.warning` | The actions to perform when a warning level is reached. |

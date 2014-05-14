@@ -25,7 +25,7 @@ munin-alert-phue.py provides extreme feedback functionality of munin alerts to a
 from __future__ import print_function
 import logging, os, sys, argparse, ConfigParser, json, time, pickle
 from phue import Bridge
-
+from lockfile import FileLock
 
 LEVEL_NORMAL=0
 LEVEL_WARNING=1
@@ -34,7 +34,7 @@ LEVEL_CRITICAL=2
 class Config:
     sysdef = {
         'state_file': '~/.munin-alert-phue.%(section)s.db',
-        'critical_interval': '5',
+        'critical_interval': '270',
         'light.normal': '@normal',
         'light.warning': '@warning',
         'light.critical': '@critical'
@@ -324,22 +324,28 @@ if __name__ == "__main__":
         log.fatal('username not defined in config section [%s]. Start with --register argument to generate a username', config.section)
         sys.exit(1)
 
-    state = load_state(config.state_file)
-    old_status = state['current_status']
+    lock = FileLock(config.state_file)
+    try:
+        lock.acquire(timeout=30)
 
-    update_state(state, JSONReader(sys.stdin))
+        state = load_state(config.state_file)
+        old_status = state['current_status']
 
-    updatePulse = int(config.get('critical_interval')) * 60
+        update_state(state, JSONReader(sys.stdin))
 
-    if (state['current_status'] != old_status
-        or (state['current_status'] == LEVEL_CRITICAL and state['last_change'] < time.time() - updatePulse)
-        ):
-        log.info('Status changed from %d to %d', old_status, state['current_status'])
-        update_lights(config, state['current_status'])
-        state['last_change'] = time.time()
+        updatePulse = int(config.get('critical_interval'))
 
-    log.debug("New state: %s", state)
-    save_state(config.state_file, state)
+        if (state['current_status'] != old_status
+            or (state['current_status'] == LEVEL_CRITICAL and state['last_change'] < time.time() - updatePulse)
+            ):
+            log.info('Status changed from %d to %d', old_status, state['current_status'])
+            update_lights(config, state['current_status'])
+            state['last_change'] = time.time()
 
+        log.debug("New state: %s", state)
+        save_state(config.state_file, state)
 
-
+    except LockTimeout:
+        log.error('Failed to acquire lock on state file %s', config.state_file)
+    finally:
+        lock.release()
