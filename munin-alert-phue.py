@@ -187,8 +187,9 @@ def parse_args():
                          metavar='HOSTNAME', help="Request a username from the Bridge at HOSTNAME. "
                          "Perform registration within 30 seconds after pressing the connect button on the bridge. "
                          "The created username is written to the standard output in the configuration file format.")
-    cmdline.add_argument('--reset',
-                         help="Reset the light status to normal.")
+    cmdline.add_argument('-v', '--verbose', action='count', default=0,
+                         help="Increase verbosity. Can be used multiple times to keep increasing verbosity. "
+                         "You will probably not see much up to -vv.")
     return cmdline.parse_args()
 
 
@@ -305,7 +306,7 @@ def register(bridge_host):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format='%(asctime)s %(levelname)s [%(name)s]: %(message)s', level=logging.DEBUG)
+    logging.basicConfig(format='%(asctime)s %(levelname)s [%(name)s]: %(message)s', level=logging.ERROR)
     log = logging.getLogger('munin.alert.phue')
 
     args = parse_args()
@@ -313,6 +314,14 @@ if __name__ == "__main__":
     if (args.register != None):
         register(args.register)
         sys.exit()
+
+    if (args.verbose > 0):
+        lvl = logging.DEBUG;
+        if (args.verbose == 1):
+            lvl = logging.WARNING
+        elif (args.verbose == 2):
+            lvl = logging.INFO
+        logging.getLogger().setLevel(lvl)
 
     config = Config(load_config(args.config), args.section)
 
