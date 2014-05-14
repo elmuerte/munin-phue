@@ -66,6 +66,9 @@ $descs = array (
 $pipes = array();
 
 $cmdline = escapeshellcmd($config['bin']);
+if ($debug) {
+   $cmdline .= ' -vvv';
+}
 if (isset($config[$key]['config-file'])) {
    $cmdline .= ' -c '.escapeshellarg($config[$key]['config-file']);
 }
