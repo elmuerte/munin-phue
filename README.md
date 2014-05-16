@@ -24,24 +24,24 @@ Below is the standard configuration. Each action can be overwritten when defined
 
 ```
 [@normal]
-1={'transitiontime': 50, 'on':True, 'bri': 128, 'hue':25500}
-2={'transitiontime': 3000, 'on':False}
+1={"transitiontime": 50, "on":true, "bri": 128, "hue":25500}
+2={"transitiontime": 3000, "on":false}
 
 [@normal-bright]
-1={'transitiontime': 50, 'on':True, 'bri': 255, 'hue':25500}
-2={'transitiontime': 3000, 'on':False}
+1={"transitiontime": 50, "on":true, "bri": 255, "hue":25500}
+2={"transitiontime": 3000, "on":false}
 
 [@warning]
-1={'transitiontime': 0, 'on':True, 'hue':53000, 'bri': 128, 'alert':'select'}
+1={"transitiontime": 0, "on":true, "hue":53000, "bri": 128, "alert":"select"}
 
 [@warning-bright]
-1={'transitiontime': 0, 'on':True, 'hue':53000, 'bri': 255, 'alert':'select'}
+1={"transitiontime": 0, "on":true, "hue":53000, "bri": 255, "alert":"select"}
 
 [@critical]
-1={'transitiontime': 0, 'on':True, 'hue':0, 'bri': 128, 'alert':'lselect'}
+1={"transitiontime": 0, "on":true, "hue":0, "bri": 128, "alert":"lselect"}
 
 [@critical-bright]
-1={'transitiontime': 0, 'on':True, 'hue':0, 'bri': 255, 'alert':'lselect'}
+1={"transitiontime": 0, "on":true, "hue":0, "bri": 255, "alert":"lselect"}
 ```
 
 The JSON line accepts all values as defined in the [Philips hue Lights API](http://developers.meethue.com/1_lightsapi.html#16_set_light_state). 
