@@ -25,7 +25,9 @@ munin-alert-phue.py provides extreme feedback functionality of munin alerts to a
 from __future__ import print_function
 import logging, os, sys, argparse, ConfigParser, json, time, pickle
 from phue import Bridge
-from lockfile import FileLock
+from lockfile import FileLock, LockTimeout
+
+__version__ = '0.5'
 
 LEVEL_NORMAL=0
 LEVEL_WARNING=1
@@ -63,7 +65,14 @@ class Config:
             ]
         }
 
-    def __init__(self, config, section):
+    def __init__(self, fp, section):
+        config = ConfigParser.ConfigParser()
+        if (fp == None):
+            log.info('Reading config from ~/.munin-alert-phue.ini')
+            config.read(os.path.expanduser('~/.munin-alert-phue.ini'))
+        else:
+            log.info('Reading config from %s', fp.name)
+            config.readfp(fp)
         self.config = config
         self.section = section
         self.vars = {'section': section }
@@ -78,14 +87,19 @@ class Config:
             self.lights = []
         else:
             self.lights = lights.split(',')
-        # TODO: iterate over sections and unset self.actions
+        for section in self.config.sections():
+            if section[0] == '@' and section in self.actions:
+                log.debug('Overwritten default config for action %s', section)
+                del self.actions[section]
+        for (key,val) in self.sysdef.items():
+            if (not self.config.has_option('*', key)):
+                self.config.set('*', key, val)
 
     def get(self, option):
         if (self.config.has_option(self.section, option)):
             return self.config.get(self.section, option, 0, self.vars)
         elif (self.config.has_option('*', option)):
             return self.config.get('*', option, 0, self.vars)
-        # TODO: get system default
         return None
 
     def level_str(self, level):
@@ -97,8 +111,15 @@ class Config:
             return 'critical'
 
     def load_actions(self, actionId):
-        # TODO: implement
-        pass
+        if (self.config.has_section(actionId)):
+            act = []
+            for (key,val) in self.config.items(actionId):
+                try:
+                    actline = json.loads(val)
+                    act.append(actline)
+                except Exception as e:
+                    log.error('Invalid config for action %s, key %s: %s\n%s', actionId, key, val, e)
+            self.actions[actionId] = act;
 
     def get_actions(self, light, level):
         levelStr = self.level_str(level)
@@ -190,6 +211,8 @@ def parse_args():
     cmdline.add_argument('-v', '--verbose', action='count', default=0,
                          help="Increase verbosity. Can be used multiple times to keep increasing verbosity. "
                          "You will probably not see much up to -vv.")
+    cmdline.add_argument('--version', action='version', version="%(prog)s "+__version__,
+                         help='Show version')
     return cmdline.parse_args()
 
 
@@ -197,13 +220,6 @@ def load_config(fp):
     """
     Load the configuration file
     """
-    config = ConfigParser.ConfigParser()
-    if (fp == None):
-        log.info('Reading config from ~/.munin-alert-phue.ini')
-        config.read(os.path.expanduser('~/.munin-alert-phue.ini'))
-    else:
-        log.info('Reading config from %s', fp.name)
-        config.readfp(fp)
     return config
 
 
@@ -311,6 +327,9 @@ if __name__ == "__main__":
 
     args = parse_args()
 
+    if (args.version != None):
+        print(__version__)
+
     if (args.register != None):
         register(args.register)
         sys.exit()
@@ -323,7 +342,7 @@ if __name__ == "__main__":
             lvl = logging.INFO
         logging.getLogger().setLevel(lvl)
 
-    config = Config(load_config(args.config), args.section)
+    config = Config(args.config, args.section)
 
     if (config.hostname == None):
         log.fatal('hostname not defined in config section [%s].', config.section)
