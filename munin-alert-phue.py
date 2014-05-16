@@ -212,7 +212,7 @@ def parse_args():
                          help="Increase verbosity. Can be used multiple times to keep increasing verbosity. "
                          "You will probably not see much up to -vv.")
     cmdline.add_argument('--version', action='version', version="%(prog)s "+__version__,
-                         help='Show version')
+                         help='Show version.')
     return cmdline.parse_args()
 
 
@@ -326,9 +326,6 @@ if __name__ == "__main__":
     log = logging.getLogger('munin.alert.phue')
 
     args = parse_args()
-
-    if (args.version != None):
-        print(__version__)
 
     if (args.register != None):
         register(args.register)
