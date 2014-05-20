@@ -50,7 +50,7 @@ if (empty($key) && isset($_SERVER['PATH_INFO'])) {
 
 if (!isset($key) || $key == 'bin' || !isset($config[$key])) {
 	header('HTTP/1.0 401 Unauthorized');
-	die;
+	die('You shouldn\'t have come back, Flynn.');
 }
 
 if (!isset($config['bin'])) {
