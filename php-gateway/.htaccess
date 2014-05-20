@@ -2,5 +2,5 @@
 <IfModule rewrite_module>
 	RewriteEngine On
 	RewriteCond %{REQUEST_FILENAME} !-f
-	RewriteRule .* index.php
+	RewriteRule (.*) index.php/$1
 </IfModule>
