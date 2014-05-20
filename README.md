@@ -3,7 +3,7 @@ munin-phue
 
 Munin alerting to Philips Hue for extreme feedback.
 
-This script is to be for translating [munin alerts](http://munin-monitoring.org/wiki/HowToContact) to a visual feedback using lights connected to a Philips hue system.
+This script will translate [munin alerts](http://munin-monitoring.org/wiki/HowToContact) to a visual feedback using lights connected to a Philips hue system. It talks to a the [Philips Hue Bridge](http://www.zigbee.org/DesktopModules/ZigbeeCompanyProducts/ProductDetails.aspx?ProductID=635&Ctrl=ViewProducts) and from there is should be able to control up to 50 lights.
 
 Munin-phue will change the color of the light based on the highest severity reported. 
 
