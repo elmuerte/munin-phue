@@ -7,6 +7,8 @@ This script will translate [munin alerts](http://munin-monitoring.org/wiki/HowTo
 
 Munin-phue will change the color of the light based on the highest severity reported. 
 
+![Lamps in warning state](http://i.imgur.com/7m0RTir.jpg)
+
 Configuration
 -------------
 
